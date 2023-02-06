@@ -18,33 +18,26 @@ class Library:
     def populate(self, card:Card):
         self.cardList.append(card)
     def shuffle(self):
-        self.cardlist=random.shuffle(self.cardList)
+        self.cardlist=shuffle(self.cardList)
     def drawTop(self):
+        returncard = self.cardList[-1]
         self.cardList=self.cardList[:-1]
-
-class Player:
-    counter = 0
-    def __init__(self, library:Library):
-        self.lifetotal=20
-        self.id=Player.counter
-        Player.counter+=1
-        self.isalive=True
-        self.library=library
-        self.hand=hand()
-    def drawCard(self):
-        self.library.drawTop()
-        self.hand.addCard()
+        return returncard
 
 class hand:
     def __init__(self):
         self.cardList=[]
     def addCard(self, card:Card):
-        self.cardList=[]
+        self.cardList.append(card)
         self.cardCount=len(self.cardList)
     def play_card(self, index:int):
         card_to_play=self.cardList[index]
         self.cardList=self.cardList.remove(card_to_play)
         card_to_play.play()
+    def draw(self, num:int, library:Library):
+        for i in range(num):
+            drawncard=library.drawTop()
+            self.addCard(card=drawncard)
 
 class Permanent:
     counter=0
@@ -101,8 +94,8 @@ class Effect(ABC):
 class summonCreature(Effect):
     def __init__(self, creature_to_summon:Creature):
         self.creature_to_summon=creature_to_summon
-    def execute(self, owner:Player):
-        owner.battlefield.addpermanent(self.creature_to_summon)
+    def execute(self):
+        Battlefield.addpermanent(self.creature_to_summon)
 
 class LandCard(Card):
     def __init__(self, name:str, art:str, color:str, isLegendary:bool):
@@ -146,3 +139,66 @@ class stack:
     def resolvenext(self):
         self.spellList[-1].resolve()
         self.spellList=self.spellList[:-1]
+
+class Phase(ABC):
+    def __init__(self):
+        self.thisphase='thisphase'
+        self.next_phase=Phase
+        print('current phase is ' + self.thisphase)
+    @abstractclassmethod
+    def next_phase(self):
+        pass
+
+class Upkeep(Phase):
+    def __init__(self):
+        self.thisphase='Upkeep'
+        print('current phase is ' + self.thisphase)
+    def next_phase(self):
+        print('exiting'+self.thisphase)
+        self.nextphase=Main()
+        return self.nextphase
+
+class Main(Phase):
+    def __init__(self):
+        self.thisphase='Main'
+        print('current phase is ' + self.thisphase)
+    def next_phase(self):
+        print('exiting'+self.thisphase)
+        self.nextphase=BeginCombat()
+        return self.nextphase
+
+class BeginCombat(Phase):
+    def __init__(self):
+        self.thisphase='BeginCombat'
+        print('current phase is ' + self.thisphase)
+    def next_phase(self):
+        print('exiting'+self.thisphase)
+        self.nextphase=EndCombat()
+        return self.nextphase
+
+class EndCombat(Phase):
+    def __init__(self):
+        self.thisphase='EndCombat'
+        print('current phase is ' + self.thisphase)
+    def next_phase(self):
+        print('exiting'+self.thisphase)
+        self.nextphase=SecondMain()
+        return self.nextphase
+
+class SecondMain(Phase):
+    def __init__(self):
+        self.thisphase='SecondMain'
+        print('current phase is ' + self.thisphase)
+    def next_phase(self):
+        print('exiting'+self.thisphase)
+        self.nextphase=EndStep()
+        return self.nextphase
+
+class EndStep(Phase):
+    def __init__(self):
+        self.thisphase='EndStep'
+        print('current phase is ' + self.thisphase)
+    def next_phase(self):
+        print('exiting'+self.thisphase)
+        self.nextphase=Upkeep()
+        return self.nextphase
