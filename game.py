@@ -49,8 +49,11 @@ class GameWindow(Tk):
         for idx, card in enumerate(game.Player0.hand.cardList):
             deck_top.add_card(card, idx)
 
+        global deck_bottom
         deck_bottom = HandFrame(self)
         deck_bottom.grid(row=2, column=0, rowspan=2, padx=0, pady=0)
+        for idx, card in enumerate(game.Player1.hand.cardList):
+            deck_bottom.add_card(card, idx)
 
         hand_top = LandFrame(self)
         hand_top.grid(row=0, column=1,padx=0, pady=0)
@@ -77,9 +80,10 @@ class GameWindow(Tk):
         lifetotal=Label(misc_top, text=0, font=('Arial', 35, 'bold'))
         lifetotal.place(x=10, y=10)
 
-        draw=Button(misc_bottom, text='draw', command=onDrawClick).grid(row=0, column=0)
-        pass0=Button(misc_bottom, text='pass', command=player0pass).grid(row=1, column=0)
-        pass1=Button(misc_top, text='pass', command=player1pass).grid(row=0, column=0)
+        draw0=Button(misc_top, text='draw', command=onDrawClick0).grid(row=0, column=0)
+        draw1=Button(misc_bottom, text='draw', command=onDrawClick1).grid(row=0, column=0)
+        pass0=Button(misc_bottom, text='pass', command=player1pass).grid(row=0, column=1)
+        pass1=Button(misc_top, text='pass', command=player0pass).grid(row=0, column=1)
 
 deck0=decklist.deck1
 
@@ -162,9 +166,13 @@ def player0pass(event=None):
 def player1pass(event=None):
     game.Player1.pass_priority()
 
-def onDrawClick(event=None):
+def onDrawClick0(event=None):
     game.Player0.drawCard(1)
     deck_top.add_card(game.Player0.hand.cardList[-1], (len(game.Player0.hand.cardList)-1))
+
+def onDrawClick1(event=None):
+    game.Player1.drawCard(1)
+    deck_bottom.add_card(game.Player1.hand.cardList[-1], (len(game.Player1.hand.cardList)-1))
 
 if __name__=='__main__':
     game_window=GameWindow()
