@@ -1,5 +1,7 @@
 import numpy as np
 import random
+from tqdm import tqdm
+import pandas as pd
 
 def lineup_to_array(lineup_list):
     lineup=[]
@@ -25,6 +27,7 @@ def softmax_n(array):
 def gen_random_decision(n_attackers, n_blockers):
     decision=np.random.random((n_blockers, n_attackers+1))
     maxed_list=[softmax_n(row) for row in decision]
+    print('decision is'+str(maxed_list))
     this_decision=np.vstack(maxed_list)
     if (n_attackers!=7) and (n_blockers!=7):
         decision_matrix_active=np.pad(this_decision[:,:-1], ((0,(7-n_blockers)),(0,(7-n_attackers))), mode='constant', constant_values=0)
@@ -142,24 +145,51 @@ def process_turn(player0attacking:bool, playerlife:np.array, player0Lineup, play
     numattacking=random.randint(0, len(attackers))
     #random attack
     attacking_creatures=random.sample(attackers, numattacking)
+    attacking_decision=[(creature in attacking_creatures) for creature in attackers]
+    #record the decision to attack
+    s_a=record_state_action(attack_lineup=attackers, block_lineup=blockers, deciding_player=(1-player0attacking), attacking_decision=attacking_decision)
     attacking_lineup=lineup_to_array(attacking_creatures)
     blocking_lineup=lineup_to_array(blockers)
-    defending_matrix=gen_random_decision(int(len(blockers)), int(len(attacking_creatures)))
-    surviving_attacker, surviving_blocker, totaldamage = resolve_damage(attacking_lineup, blocking_lineup, defending_matrix)
-    playerlife[player0attacking]-=totaldamage
-    for creature in attacking_creatures:
-        attackers.remove(creature)
-    attackers_left=attackers+surviving_attacker[surviving_attacker!=0].tolist()
-    blockers_left=surviving_blocker[surviving_blocker!=0].tolist()
-    return playerlife, attackers_left, blockers_left
+    if (len(attacking_creatures)>=1) & (len(blockers)>=1):
+        #at least one attacker and one blocker
+        defending_matrix=gen_random_decision(int(len(blockers)), int(len(attacking_creatures)))
+        surviving_attacker, surviving_blocker, totaldamage = resolve_damage(attacking_lineup, blocking_lineup, defending_matrix)
+        playerlife[player0attacking]-=totaldamage
+        for creature in attacking_creatures:
+            attackers.remove(creature)
+        attackers_left=attackers+surviving_attacker[surviving_attacker!=0].reshape(-1,2).tolist()
+        blockers_left=surviving_blocker[surviving_blocker!=0].reshape(-1,2).tolist()
+    elif (len(attacking_creatures)>=1) & (len(blockers)<1):
+        #no blockers available
+        totaldamage=0
+        #all creatures deal damage
+        for creature in attacking_creatures:
+            totaldamage+=creature[0]
+        playerlife[player0attacking]-=totaldamage
+        attackers_left=attackers
+        blockers_left=blockers
+    elif (len(attacking_creatures)<1) & (len(blockers)>=1):
+        #no attackers, yes blockers
+        totaldamage=0
+        playerlife[player0attacking]-=totaldamage
+        attackers_left=attackers
+        blockers_left=blockers
+    else:
+        #no blockers but did not attack either
+        totaldamage=0
+        playerlife[player0attacking]-=totaldamage
+        attackers_left=attackers
+        blockers_left=blockers
+    return playerlife, attackers_left, blockers_left, s_a
 
 def game():
     life=np.array([20,20])
     player0=[]
     player1=[]
     P0attacking=random.randint(0,1)
-    while np.any(life>=0):
-        life, attackerleft, blockerleft = process_turn(player0attacking=P0attacking, playerlife=life, player0Lineup=player0, player1Lineup=player1)
+    log=pd.DataFrame(columns = [i for i in range()])
+    while np.all(life>0):
+        life, attackerleft, blockerleft, s_a = process_turn(player0attacking=P0attacking, playerlife=life, player0Lineup=player0, player1Lineup=player1)
         if P0attacking==1:
             player0=attackerleft
             player1=blockerleft
@@ -168,7 +198,26 @@ def game():
             player1=attackerleft
         P0attacking=1-P0attacking
         print('life: '+str(life))
-        
 
-def gen_stateaction_pair(attacking_lineup, blocking_lineup, state:bool, attacking_creatures=None, blocking_matrix=None):
-    pass
+
+def record_state_action(attack_lineup, block_lineup, deciding_player, attacking_creatures=None, attacking_decision=None, blocking_matrix=None):
+    attack=lineup_to_array(attack_lineup)
+    block=lineup_to_array(block_lineup)
+    try:
+        attackcr=lineup_to_array(attacking_creatures)
+    except TypeError:
+        attackcr=np.array([])
+    try:
+        blockformation=blocking_matrix.flatten()
+    except AttributeError:
+        blockformation=np.zeros(56)
+    df=pd.DataFrame(np.hstack([attack, block, np.pad(np.array(attacking_decision), (0, int(7-len(attacking_decision))), 'constant'), np.array(deciding_player), attackcr, blockformation]))
+    return df
+
+
+#game()
+for i in tqdm(range(10000)):
+    game()
+
+N = 4
+np.pad(x, (0, N), 'constant')
