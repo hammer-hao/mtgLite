@@ -2,7 +2,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 import pandas as pd
-from model_combat import creatures_list
+from model_combat import params
 
 creatures_pool=[[1,1], [2,2], [2,1], [1,2], [2,3], [3,3], [3,2], [3,1], [2,4], [4,4], [4,2], [3,5], [5,5]]
 
@@ -42,6 +42,18 @@ def gen_random_decision(n_attackers, n_blockers):
         decision_matrix_active=this_decision
     return decision_matrix_active
 
+def generate_discrete_action(current_state, action_vector, blocking:bool):
+    if not blocking:
+        return action_vector>0,5
+    else:
+        attackers=current_state[-14:].reshape(7,2)
+        #remove nonexistent attackers with (0,0)
+        attackers = attackers[~np.all(attackers == 0, axis=1)]
+        
+        #generate size as average squared value
+        compute_size=lambda x: ((x[0]**2)+(x[1]**2))/2
+        
+    pass
 
 def resolve_damage(attackingarray, defendingarray, defendingdecision):
     attackers=attackingarray.reshape(7, 2).tolist()
@@ -141,9 +153,9 @@ def process_turn(player0attacking:bool, playerlife:np.array, player0Lineup, play
         blockers=player0Lineup
     #each player recieves a random creature
     if len(attackers)<7:
-        attackers.append(random.choice(creatures_list))
+        attackers.append(random.choice(params))
     if len(blockers)<7:
-        blockers.append(random.choice(creatures_list))
+        blockers.append(random.choice(params))
     numattacking=random.randint(0, len(attackers))
     #random attack
     attacking_creatures=random.sample(attackers, numattacking)
@@ -230,3 +242,5 @@ def record_state_action(life, playerbool, attack_lineup, block_lineup, deciding_
         blockformation=np.zeros(49)
     df=pd.DataFrame(np.hstack([life, attack, block, np.pad(np.array(attacking_decision), (0, int(7-len(attacking_decision))), 'constant'), np.array(deciding_player), attackcr, blockformation, controllingplayer])).T
     return df
+
+def step(self, opponent_actor, current_state=None):
