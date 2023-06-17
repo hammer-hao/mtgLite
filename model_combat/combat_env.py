@@ -49,7 +49,9 @@ def generate_discrete_action(current_state, action_vector, blocking:bool):
         attackers=current_state[-14:].reshape(7,2)
         #remove nonexistent attackers with (0,0)
         attackers = attackers[~np.all(attackers == 0, axis=1)]
+        size=(compute_size(creature) for creature in attackers)
         
+
         #generate size as average squared value
         compute_size=lambda x: ((x[0]**2)+(x[1]**2))/2
         
@@ -153,9 +155,9 @@ def process_turn(player0attacking:bool, playerlife:np.array, player0Lineup, play
         blockers=player0Lineup
     #each player recieves a random creature
     if len(attackers)<7:
-        attackers.append(random.choice(params))
+        attackers.append(random.choice(params.creatures))
     if len(blockers)<7:
-        blockers.append(random.choice(params))
+        blockers.append(random.choice(params.creatures))
     numattacking=random.randint(0, len(attackers))
     #random attack
     attacking_creatures=random.sample(attackers, numattacking)
@@ -243,4 +245,4 @@ def record_state_action(life, playerbool, attack_lineup, block_lineup, deciding_
     df=pd.DataFrame(np.hstack([life, attack, block, np.pad(np.array(attacking_decision), (0, int(7-len(attacking_decision))), 'constant'), np.array(deciding_player), attackcr, blockformation, controllingplayer])).T
     return df
 
-def step(self, opponent_actor, current_state=None):
+#def step(self, opponent_actor, current_state=None):

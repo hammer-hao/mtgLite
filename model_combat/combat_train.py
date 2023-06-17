@@ -1,4 +1,4 @@
-from model_combat.combat import game
+from model_combat.combat_env import game
 from tqdm import tqdm
 import pandas as pd
 train_df=pd.DataFrame()
